@@ -1,42 +1,23 @@
-#!/usr/bin/env python2
-# Copyright (c) 2014 The Bitcoin Core developers
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-from test_framework import BitcoinTestFramework
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
-from util import *
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import *
 
 from binascii import a2b_hex, b2a_hex
 from hashlib import sha256
 from struct import pack
 
 
-def check_array_result(object_array, to_match, expected):
-    """
-    Pass in array of JSON objects, a dictionary with key/value pairs
-    to match against, and another dictionary with expected key/value
-    pairs.
-    """
-    num_matched = 0
-    for item in object_array:
-        all_match = True
-        for key,value in to_match.items():
-            if item[key] != value:
-                all_match = False
-        if not all_match:
-            continue
-        for key,value in expected.items():
-            if item[key] != value:
-                raise AssertionError("%s : expected %s=%s"%(str(item), str(key), str(value)))
-            num_matched = num_matched+1
-    if num_matched == 0:
-        raise AssertionError("No objects matched %s"%(str(to_match)))
-
 def b2x(b):
     return b2a_hex(b).decode('ascii')
 
-# NOTE: This does not work for signed numbers (set the high bit) or zero (use b'\0')
+# NOTE: This does not work for signed numbers (set the high bit) or zero
+# (use b'\0')
+
+
 def encodeUNum(n):
     s = bytearray(b'\1')
     while n > 127:
@@ -45,6 +26,7 @@ def encodeUNum(n):
         n //= 256
     s.append(n)
     return bytes(s)
+
 
 def varlenEncode(n):
     if n < 0xfd:
@@ -55,8 +37,10 @@ def varlenEncode(n):
         return b'\xfe' + pack('<L', n)
     return b'\xff' + pack('<Q', n)
 
+
 def dblsha(b):
     return sha256(sha256(b).digest()).digest()
+
 
 def genmrklroot(leaflist):
     cur = leaflist
@@ -65,65 +49,78 @@ def genmrklroot(leaflist):
         if len(cur) & 1:
             cur.append(cur[-1])
         for i in range(0, len(cur), 2):
-            n.append(dblsha(cur[i] + cur[i+1]))
+            n.append(dblsha(cur[i] + cur[i + 1]))
         cur = n
     return cur[0]
 
-def template_to_bytes(tmpl, txlist):
+
+def template_to_bytearray(tmpl, txlist):
     blkver = pack('<L', tmpl['version'])
     mrklroot = genmrklroot(list(dblsha(a) for a in txlist))
     timestamp = pack('<L', tmpl['curtime'])
     nonce = b'\0\0\0\0'
-    blk = blkver + a2b_hex(tmpl['previousblockhash'])[::-1] + mrklroot + timestamp + a2b_hex(tmpl['bits'])[::-1] + nonce
+    blk = blkver + a2b_hex(tmpl['previousblockhash'])[
+        ::-1] + mrklroot + timestamp + a2b_hex(tmpl['bits'])[::-1] + nonce
     blk += varlenEncode(len(txlist))
     for tx in txlist:
         blk += tx
-    return blk
+    return bytearray(blk)
+
 
 def template_to_hex(tmpl, txlist):
-    return b2x(template_to_bytes(tmpl, txlist))
+    return b2x(template_to_bytearray(tmpl, txlist))
+
 
 def assert_template(node, tmpl, txlist, expect):
-    rsp = node.getblocktemplate({'data':template_to_hex(tmpl, txlist),'mode':'proposal'})
+    rsp = node.getblocktemplate(
+        {'data': template_to_hex(tmpl, txlist), 'mode': 'proposal'})
     if rsp != expect:
         raise AssertionError('unexpected: %s' % (rsp,))
 
+
 class GetBlockTemplateProposalTest(BitcoinTestFramework):
+
     '''
     Test block proposals with getblocktemplate.
     '''
 
+    def __init__(self):
+        super().__init__()
+        self.num_nodes = 2
+        self.setup_clean_chain = False
+
     def run_test(self):
         node = self.nodes[0]
+        node.generate(1)  # Mine a block to leave initial block download
         tmpl = node.getblocktemplate()
         if 'coinbasetxn' not in tmpl:
             rawcoinbase = encodeUNum(tmpl['height'])
             rawcoinbase += b'\x01-'
             hexcoinbase = b2x(rawcoinbase)
             hexoutval = b2x(pack('<Q', tmpl['coinbasevalue']))
-            tmpl['coinbasetxn'] = {'data': '01000000' + '01' + '0000000000000000000000000000000000000000000000000000000000000000ffffffff' + ('%02x' % (len(rawcoinbase),)) + hexcoinbase + 'fffffffe' + '01' + hexoutval + '00' + '00000000'}
-        txlist = list(bytearray(a2b_hex(a['data'])) for a in (tmpl['coinbasetxn'],) + tuple(tmpl['transactions']))
+            tmpl['coinbasetxn'] = {'data': '01000000' + '01' + '0000000000000000000000000000000000000000000000000000000000000000ffffffff' + (
+                '%02x' % (len(rawcoinbase),)) + hexcoinbase + 'fffffffe' + '01' + hexoutval + '00' + '00000000'}
+        txlist = list(bytearray(a2b_hex(a['data']))
+                      for a in (tmpl['coinbasetxn'],) + tuple(tmpl['transactions']))
 
         # Test 0: Capability advertised
         assert('proposal' in tmpl['capabilities'])
 
         # NOTE: This test currently FAILS (regtest mode doesn't enforce block height in coinbase)
-        ## Test 1: Bad height in coinbase
-        #txlist[0][4+1+36+1+1] += 1
-        #assert_template(node, tmpl, txlist, 'FIXME')
-        #txlist[0][4+1+36+1+1] -= 1
+        # Test 1: Bad height in coinbase
+        # txlist[0][4+1+36+1+1] += 1
+        # assert_template(node, tmpl, txlist, 'FIXME')
+        # txlist[0][4+1+36+1+1] -= 1
 
         # Test 2: Bad input hash for gen tx
-        txlist[0][4+1] += 1
+        txlist[0][4 + 1] += 1
         assert_template(node, tmpl, txlist, 'bad-cb-missing')
-        txlist[0][4+1] -= 1
+        txlist[0][4 + 1] -= 1
 
         # Test 3: Truncated final tx
         lastbyte = txlist[-1].pop()
-        try:
-            assert_template(node, tmpl, txlist, 'n/a')
-        except JSONRPCException:
-            pass  # Expected
+        assert_raises(
+            JSONRPCException, assert_template, node, tmpl, txlist, 'n/a')
         txlist[-1].append(lastbyte)
 
         # Test 4: Add an invalid tx to the end (duplicate of gen tx)
@@ -133,7 +130,7 @@ class GetBlockTemplateProposalTest(BitcoinTestFramework):
 
         # Test 5: Add an invalid tx to the end (non-duplicate)
         txlist.append(bytearray(txlist[0]))
-        txlist[-1][4+1] = b'\xff'
+        txlist[-1][4 + 1] = 0xff
         assert_template(node, tmpl, txlist, 'bad-txns-inputs-missingorspent')
         txlist.pop()
 
@@ -144,10 +141,8 @@ class GetBlockTemplateProposalTest(BitcoinTestFramework):
 
         # Test 7: Bad tx count
         txlist.append(b'')
-        try:
-            assert_template(node, tmpl, txlist, 'n/a')
-        except JSONRPCException:
-            pass  # Expected
+        assert_raises(
+            JSONRPCException, assert_template, node, tmpl, txlist, 'n/a')
         txlist.pop()
 
         # Test 8: Bad bits
@@ -157,9 +152,9 @@ class GetBlockTemplateProposalTest(BitcoinTestFramework):
         tmpl['bits'] = realbits
 
         # Test 9: Bad merkle root
-        rawtmpl = template_to_bytes(tmpl, txlist)
-        rawtmpl[4+32] = (rawtmpl[4+32] + 1) % 0x100
-        rsp = node.getblocktemplate({'data':b2x(rawtmpl),'mode':'proposal'})
+        rawtmpl = template_to_bytearray(tmpl, txlist)
+        rawtmpl[4 + 32] = (rawtmpl[4 + 32] + 1) % 0x100
+        rsp = node.getblocktemplate({'data': b2x(rawtmpl), 'mode': 'proposal'})
         if rsp != 'bad-txnmrklroot':
             raise AssertionError('unexpected: %s' % (rsp,))
 

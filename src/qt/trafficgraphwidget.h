@@ -1,12 +1,12 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Copyright (c) 2011-2015 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_QT_TRAFFICGRAPHWIDGET_H
 #define BITCOIN_QT_TRAFFICGRAPHWIDGET_H
 
-#include <QWidget>
 #include <QQueue>
+#include <QWidget>
 
 class ClientModel;
 
@@ -15,8 +15,7 @@ class QPaintEvent;
 class QTimer;
 QT_END_NAMESPACE
 
-class TrafficGraphWidget : public QWidget
-{
+class TrafficGraphWidget : public QWidget {
     Q_OBJECT
 
 public:
@@ -27,7 +26,7 @@ public:
 protected:
     void paintEvent(QPaintEvent *);
 
-public slots:
+public Q_SLOTS:
     void updateRates();
     void setGraphRangeMins(int mins);
     void clear();

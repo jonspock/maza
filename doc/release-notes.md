@@ -1,86 +1,70 @@
-Bitcoin Core version 0.10.2 is now available from:
+Bitcoin ABC version 0.15.0 is now available from:
 
-  <https://bitcoin.org/bin/bitcoin-core-0.10.2/>
+  <https://download.bitcoinabc.org/0.15.0/>
 
-This is a new minor version release, bringing minor bug fixes and translation 
-updates. It is recommended to upgrade to this version.
+This release includes the following features and fixes:
 
-Please report bugs using the issue tracker at github:
+- Reserve block space for high priority transactions (D485)
+- Use "bitcoincash:" URI (D466)
+- Add and accept Bitcoin Cash networking magic (D400)
+- Peer preferentially with NODE_CASH nodes (D457)
+- Hardcoded seeds update (D403)
+- Remove UAHF RPC calls, and some of the UAHF activation logic (D407, D417)
+- Various test fixes and other cleanups now that UAHF activation is past
+- Various changes now that we do replay protected txns only (D437, D440, D442, D444, D451, D455, D456)
+- Make SCRIPT_VERIFY_STRICTENC a mandatory flag (D421)
+- Fix RPC signrawtransaction silently accepting missing amount field (D449)
+- Fix a some small memory leaks, and an overflow (D372, D452, D472)
+- Added sanitizer support (D474, D481)
+- Rename package to bitcoin-abc-* (D482, D489, D510, D513)
+- Cryptographic randomness improvements (backport from Core PR9821 and PR9792) (D488, D490)
+- Store the UTXO set on a per output basis rather than a per transaction basis (backport from Core)
+- Various other backports and fixes from Core
+- Various fixes and improvements to test suite
+- Various code cleanups and style improvements
+- Low level RPC error code changes (D500 / backport of PR9853)
 
-  <https://github.com/bitcoin/bitcoin/issues>
+Low-level RPC changes (D500)
+----------------------------
 
-Upgrading and downgrading
-=========================
+- Error codes have been updated to be more accurate for the following error cases:
+  - `getblock` now returns RPC_MISC_ERROR if the block can't be found on disk (for
+  example if the block has been pruned). Previously returned RPC_INTERNAL_ERROR.
+  - `pruneblockchain` now returns RPC_MISC_ERROR if the blocks cannot be pruned
+  because the node is not in pruned mode. Previously returned RPC_METHOD_NOT_FOUND.
+  - `pruneblockchain` now returns RPC_INVALID_PARAMETER if the blocks cannot be pruned
+  because the supplied timestamp is too late. Previously returned RPC_INTERNAL_ERROR.
+  - `pruneblockchain` now returns RPC_MISC_ERROR if the blocks cannot be pruned
+  because the blockchain is too short. Previously returned RPC_INTERNAL_ERROR.
+  - `setban` now returns RPC_CLIENT_INVALID_IP_OR_SUBNET if the supplied IP address
+  or subnet is invalid. Previously returned RPC_CLIENT_NODE_ALREADY_ADDED.
+  - `setban` now returns RPC_CLIENT_INVALID_IP_OR_SUBNET if the user tries to unban
+  a node that has not previously been banned. Previously returned RPC_MISC_ERROR.
+  - `removeprunedfunds` now returns RPC_WALLET_ERROR if bitcoind is unable to remove
+  the transaction. Previously returned RPC_INTERNAL_ERROR.
+  - `removeprunedfunds` now returns RPC_INVALID_PARAMETER if the transaction does not
+  exist in the wallet. Previously returned RPC_INTERNAL_ERROR.
+  - `fundrawtransaction` now returns RPC_INVALID_ADDRESS_OR_KEY if an invalid change
+  address is provided. Previously returned RPC_INVALID_PARAMETER.
+  - `fundrawtransaction` now returns RPC_WALLET_ERROR if bitcoind is unable to create
+  the transaction. The error message provides further details. Previously returned
+  RPC_INTERNAL_ERROR.
+  - The `gettxoutsetinfo` response now contains `disk_size` and `bogosize` instead of
+    `bytes_serialized`. The first is a more accurate estimate of actual disk usage, but
+    is not deterministic. The second is unrelated to disk usage, but is a
+    database-independent metric of UTXO set size: it counts every UTXO entry as 50 + the
+    length of its scriptPubKey.
 
-How to Upgrade
---------------
+Reserve block space for high priority transactions (D485)
+---------------------------------------------------------
 
-If you are running an older version, shut it down. Wait until it has completely
-shut down (which might take a few minutes for older versions), then run the
-installer (on Windows) or just copy over /Applications/Bitcoin-Qt (on Mac) or
-bitcoind/bitcoin-qt (on Linux).
+By default reserve 5% of the max generated block size parameter to hiprio transactions.
+Hence a `bitcoind` instance running with an unmodified configuration will reserve 100K
+for high priority transactions. The parameter name used for this configuration
+`blockprioritypercentage`. While introducing this new parameter we deprecated
+`blockprioritysize`(it was used to specify the amount of high prio reserved area in byte).
 
-Downgrade warning
-------------------
-
-Because release 0.10.0 and later makes use of headers-first synchronization and
-parallel block download (see further), the block files and databases are not
-backwards-compatible with pre-0.10 versions of Bitcoin Core or other software:
-
-* Blocks will be stored on disk out of order (in the order they are
-received, really), which makes it incompatible with some tools or
-other programs. Reindexing using earlier versions will also not work
-anymore as a result of this.
-
-* The block index database will now hold headers for which no block is
-stored on disk, which earlier versions won't support.
-
-If you want to be able to downgrade smoothly, make a backup of your entire data
-directory. Without this your node will need start syncing (or importing from
-bootstrap.dat) anew afterwards. It is possible that the data from a completely
-synchronised 0.10 node may be usable in older versions as-is, but this is not
-supported and may break as soon as the older version attempts to reindex.
-
-This does not affect wallet forward or backward compatibility.
-
-Notable changes
-===============
-
-This fixes a serious problem on Windows with data directories that have non-ASCII
-characters (https://github.com/bitcoin/bitcoin/issues/6078).
-
-For other platforms there are no notable changes.
-
-For the notable changes in 0.10, refer to the release notes
-at https://github.com/bitcoin/bitcoin/blob/v0.10.0/doc/release-notes.md
-
-0.10.2 Change log
-=================
-
-Detailed release notes follow. This overview includes changes that affect external
-behavior, not code moves, refactors or string updates.
-
-Wallet:
-- `824c011` fix boost::get usage with boost 1.58
-
-Miscellaneous:
-- `da65606` Avoid crash on start in TestBlockValidity with gen=1.
-- `424ae66` don't imbue boost::filesystem::path with locale "C" on windows (fixes #6078)
-
-Credits
-=======
-
-Thanks to everyone who directly contributed to this release:
-
-- Cory Fields
-- Gregory Maxwell
-- Jonas Schnelli
-- Wladimir J. van der Laan
-
-And all those who contributed additional code review and/or security research:
-
-- dexX7
-- Pieter Wuille
-- vayvanne
-
-As well as everyone that helped translating on [Transifex](https://www.transifex.com/projects/p/bitcoin/).
+A transaction is considered high priority if its priority is higher than this threshold: `COIN * 144 / 250`,
+where COIN is the value of a one bitcoin UTXO expressed in satoshis. Thus a transaction
+who as an input of 1 bitcoin and are 144 blocks old and whose size is 250 bytes is considered
+the priority cut-off.

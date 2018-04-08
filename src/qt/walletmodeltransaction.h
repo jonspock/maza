@@ -1,5 +1,5 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Copyright (c) 2011-2014 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_QT_WALLETMODELTRANSACTION_H
@@ -16,10 +16,10 @@ class CWallet;
 class CWalletTx;
 
 /** Data model for a walletmodel transaction. */
-class WalletModelTransaction
-{
+class WalletModelTransaction {
 public:
-    explicit WalletModelTransaction(const QList<SendCoinsRecipient> &recipients);
+    explicit WalletModelTransaction(
+        const QList<SendCoinsRecipient> &recipients);
     ~WalletModelTransaction();
 
     QList<SendCoinsRecipient> getRecipients();
@@ -27,7 +27,7 @@ public:
     CWalletTx *getTransaction();
     unsigned int getTransactionSize();
 
-    void setTransactionFee(const CAmount& newFee);
+    void setTransactionFee(const CAmount &newFee);
     CAmount getTransactionFee();
 
     CAmount getTotalTransactionAmount();
@@ -35,8 +35,11 @@ public:
     void newPossibleKeyChange(CWallet *wallet);
     CReserveKey *getPossibleKeyChange();
 
+    // needed for the subtract-fee-from-amount feature
+    void reassignAmounts(int nChangePosRet);
+
 private:
-    const QList<SendCoinsRecipient> recipients;
+    QList<SendCoinsRecipient> recipients;
     CWalletTx *walletTransaction;
     CReserveKey *keyChange;
     CAmount fee;

@@ -1,5 +1,5 @@
-// Copyright (c) 2011-2014 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Copyright (c) 2011-2014 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_QT_BITCOINADDRESSVALIDATOR_H
@@ -10,8 +10,7 @@
 /** Base58 entry widget validator, checks for valid characters and
  * removes some whitespace.
  */
-class BitcoinAddressEntryValidator : public QValidator
-{
+class BitcoinAddressEntryValidator : public QValidator {
     Q_OBJECT
 
 public:
@@ -22,8 +21,7 @@ public:
 
 /** Bitcoin address widget validator, checks for a valid bitcoin address.
  */
-class BitcoinAddressCheckValidator : public QValidator
-{
+class BitcoinAddressCheckValidator : public QValidator {
     Q_OBJECT
 
 public:
