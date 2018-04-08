@@ -1,5 +1,5 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Copyright (c) 2011-2014 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_QT_TRANSACTIONFILTERPROXY_H
@@ -11,8 +11,7 @@
 #include <QSortFilterProxyModel>
 
 /** Filter the transaction list according to pre-specified rules. */
-class TransactionFilterProxy : public QSortFilterProxyModel
-{
+class TransactionFilterProxy : public QSortFilterProxyModel {
     Q_OBJECT
 
 public:
@@ -25,10 +24,9 @@ public:
     /** Type filter bit field (all types) */
     static const quint32 ALL_TYPES = 0xFFFFFFFF;
 
-    static quint32 TYPE(int type) { return 1<<type; }
+    static quint32 TYPE(int type) { return 1 << type; }
 
-    enum WatchOnlyFilter
-    {
+    enum WatchOnlyFilter {
         WatchOnlyFilter_All,
         WatchOnlyFilter_Yes,
         WatchOnlyFilter_No
@@ -40,7 +38,7 @@ public:
       @note Type filter takes a bit field created with TYPE() or ALL_TYPES
      */
     void setTypeFilter(quint32 modes);
-    void setMinAmount(const CAmount& minimum);
+    void setMinAmount(const CAmount &minimum);
     void setWatchOnlyFilter(WatchOnlyFilter filter);
 
     /** Set maximum number of rows returned, -1 if unlimited. */
@@ -52,7 +50,8 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
 
 protected:
-    bool filterAcceptsRow(int source_row, const QModelIndex & source_parent) const;
+    bool filterAcceptsRow(int source_row,
+                          const QModelIndex &source_parent) const;
 
 private:
     QDateTime dateFrom;
