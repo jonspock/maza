@@ -56,7 +56,7 @@ public:
      * @note Source: https://en.bitcoin.it/wiki/Units.
      * Please add only sensible ones.
      */
-    enum Unit { BCC, mBCC, uBCC };
+    enum Unit { MAZA, mMAZA, uMAZA };
 
     enum SeparatorStyle { separatorNever, separatorStandard, separatorAlways };
 

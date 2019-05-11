@@ -145,6 +145,10 @@ CoinControlDialog::CoinControlDialog(const PlatformStyle *_platformStyle,
     // see https://github.com/bitcoin/bitcoin/issues/5716
     ui->treeWidget->headerItem()->setText(COLUMN_CHECKBOX, QString());
 
+    // change coin control first column label due Qt4 bug. 
+    // see https://github.com/bitcoin/bitcoin/issues/5716
+    ui->treeWidget->headerItem()->setText(COLUMN_CHECKBOX, QString());
+
     ui->treeWidget->setColumnWidth(COLUMN_CHECKBOX, 84);
     ui->treeWidget->setColumnWidth(COLUMN_AMOUNT, 110);
     ui->treeWidget->setColumnWidth(COLUMN_LABEL, 190);
@@ -581,7 +585,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog *dialog) {
     }
 
     // actually update labels
-    int nDisplayUnit = BitcoinUnits::BCC;
+    int nDisplayUnit = BitcoinUnits::MAZA;
     if (model && model->getOptionsModel()) {
         nDisplayUnit = model->getOptionsModel()->getDisplayUnit();
     }
