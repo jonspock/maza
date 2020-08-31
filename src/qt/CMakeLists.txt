@@ -125,6 +125,7 @@ add_library(mac_stuff
 	macnotificationhandler.mm
 	)
 set_property(TARGET mac_stuff PROPERTY CXX_STANDARD 11)
+target_compile_definitions(mac_stuff PUBLIC OBJC_OLD_DISPATCH_PROTOTYPES)
 endif()
 
 
